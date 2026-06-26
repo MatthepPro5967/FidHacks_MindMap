@@ -1,5 +1,5 @@
 import { useState } from "react";
-import type { Skill } from "../types";
+import type { Skill, Connection } from "../types";
 import { countDescendants } from "../utils/stats";
 import { DEPTH_COLORS } from "../components/SkillNode";
 import { AppHeader } from "../components/ui";
@@ -11,12 +11,14 @@ import { AICompanion } from "../components/AICompanion";
 
 type Props = {
   skills: Skill[];
+  connections: Connection[];
   isDark: boolean;
   onToggleTheme: () => void;
   onEnterTree: (rootId: string) => void;
   onEnterFull: () => void;
   onAddRoot: () => void;
   onAddSkill: (s: Skill) => void;
+  onAddConnections: (c: Connection[]) => void;
   onDeleteSkill: (id: string) => void;
 };
 
@@ -30,7 +32,7 @@ function TrashIcon() {
   );
 }
 
-export function HomeView({ skills, isDark, onToggleTheme, onEnterTree, onEnterFull, onAddRoot, onAddSkill, onDeleteSkill }: Props) {
+export function HomeView({ skills, connections, isDark, onToggleTheme, onEnterTree, onEnterFull, onAddRoot, onAddSkill, onAddConnections, onDeleteSkill }: Props) {
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const roots = skills.filter((s) => s.parent === null);
 
@@ -77,7 +79,7 @@ export function HomeView({ skills, isDark, onToggleTheme, onEnterTree, onEnterFu
           {/* AI Entry Widget */}
           <div style={{ marginBottom: 18, background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 10, padding: "14px 16px" }}>
             <div style={{ color: "var(--text-3)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>AI Skill Entry</div>
-            <AIEntryWidget skills={skills} onAdd={onAddSkill} />
+            <AIEntryWidget skills={skills} onAdd={onAddSkill} onConnections={onAddConnections} />
           </div>
 
           {roots.length === 0 && (
@@ -159,7 +161,7 @@ export function HomeView({ skills, isDark, onToggleTheme, onEnterTree, onEnterFu
           flexDirection: "column",
           overflow: "hidden",
         }}>
-          <AICompanion skills={skills} />
+          <AICompanion skills={skills} connections={connections} />
         </div>
       </div>
     </div>

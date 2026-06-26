@@ -1,10 +1,43 @@
 import { useState, useRef, useEffect } from "react";
-import type { Skill } from "../types";
+import React from "react";
+import type { Skill, Connection } from "../types";
 import { chatWithTree, type ChatMessage } from "../utils/ai";
 
-type Props = { skills: Skill[] };
+type Props = { skills: Skill[]; connections?: Connection[] };
 
-export function AICompanion({ skills }: Props) {
+function renderMessage(text: string, isUser: boolean) {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+
+  function parseBold(line: string): React.ReactNode[] {
+    const parts = line.split(/(\*\*[^*]+\*\*)/g);
+    return parts.map((p, i) =>
+      p.startsWith("**") && p.endsWith("**")
+        ? <strong key={i} style={{ fontWeight: 700 }}>{p.slice(2, -2)}</strong>
+        : p
+    );
+  }
+
+  lines.forEach((line, i) => {
+    const trimmed = line.trim();
+    if (!trimmed) {
+      elements.push(<div key={i} style={{ height: 4 }} />);
+    } else if (/^[-•*]\s/.test(trimmed)) {
+      elements.push(
+        <div key={i} style={{ display: "flex", gap: 6, alignItems: "flex-start", marginTop: 3 }}>
+          <span style={{ color: isUser ? "rgba(255,255,255,0.7)" : "var(--green)", flexShrink: 0, marginTop: 1, fontSize: 10 }}>●</span>
+          <span>{parseBold(trimmed.replace(/^[-•*]\s/, ""))}</span>
+        </div>
+      );
+    } else {
+      elements.push(<div key={i} style={{ marginTop: i === 0 ? 0 : 4 }}>{parseBold(trimmed)}</div>);
+    }
+  });
+
+  return elements;
+}
+
+export function AICompanion({ skills, connections = [] }: Props) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: "Hi! Ask me anything about your skills — what to learn next, how your trees connect, or where to focus." },
   ]);
@@ -26,7 +59,7 @@ export function AICompanion({ skills }: Props) {
     setLoading(true);
 
     try {
-      const reply = await chatWithTree(trimmed, messages, skills);
+      const reply = await chatWithTree(trimmed, messages, skills, connections);
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (e) {
       setMessages((prev) => [...prev, { role: "assistant", content: "Sorry, something went wrong. Try again." }]);
@@ -65,7 +98,7 @@ export function AICompanion({ skills }: Props) {
                 lineHeight: 1.55,
               }}
             >
-              {msg.content}
+              {renderMessage(msg.content, msg.role === "user")}
             </div>
           </div>
         ))}

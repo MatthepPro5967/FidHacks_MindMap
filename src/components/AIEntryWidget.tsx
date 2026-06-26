@@ -1,15 +1,17 @@
 import { useState, useRef } from "react";
-import type { Skill } from "../types";
-import { parseSkillFromInput } from "../utils/ai";
+import type { Skill, Connection } from "../types";
+import { parseSkillFromInput, findConnections } from "../utils/ai";
 import { makeId } from "../utils/stats";
 
 const COOLDOWN_MS = 5000;
 
-type Props = { skills: Skill[]; onAdd: (s: Skill) => void };
+type Props = { skills: Skill[]; onAdd: (s: Skill) => void; onConnections: (c: Connection[]) => void };
 
-export function AIEntryWidget({ skills, onAdd }: Props) {
+export function AIEntryWidget({ skills, onAdd, onConnections }: Props) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const [note, setNote] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [cooldown, setCooldown] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -29,6 +31,7 @@ export function AIEntryWidget({ skills, onAdd }: Props) {
     if (!trimmed || loading || cooldown > 0) return;
     setLoading(true);
     setError(null);
+    setNote(null);
     try {
       const result = await parseSkillFromInput(trimmed, skills);
       const skill: Skill = {
@@ -38,13 +41,31 @@ export function AIEntryWidget({ skills, onAdd }: Props) {
         description: result.description,
         createdAt: new Date().toISOString(),
       };
+      // Show the node immediately…
       onAdd(skill);
       setInput("");
       startCooldown();
+      setLoading(false);
+
+      // …then discover its hidden cross-domain connections in the background.
+      setLinking(true);
+      try {
+        const found = await findConnections(skill, [...skills, skill]);
+        onConnections(found);
+        setNote(
+          found.length
+            ? `Found ${found.length} hidden connection${found.length !== 1 ? "s" : ""} — see the Full Tree.`
+            : `Added “${skill.title}”. No strong cross-domain links yet.`
+        );
+      } catch (e) {
+        console.error("Connection discovery error:", e);
+        setNote(`Added “${skill.title}”.`);
+      } finally {
+        setLinking(false);
+      }
     } catch (e) {
       console.error("AI error:", e);
       setError(e instanceof Error ? e.message : "Couldn't parse that — try rephrasing.");
-    } finally {
       setLoading(false);
     }
   }
@@ -70,6 +91,13 @@ export function AIEntryWidget({ skills, onAdd }: Props) {
           }}
         />
         {error && <div style={{ color: "#ef4444", fontSize: 11 }}>{error}</div>}
+        {!error && linking && (
+          <div style={{ color: "var(--text-3)", fontSize: 11, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "hsl(38,95%,55%)", display: "inline-block", animation: "bounce 1s ease-in-out infinite" }} />
+            Mapping hidden connections…
+          </div>
+        )}
+        {!error && !linking && note && <div style={{ color: "var(--text-3)", fontSize: 11 }}>{note}</div>}
       </div>
       <button
         onClick={handleSubmit}

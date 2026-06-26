@@ -2,9 +2,10 @@ import { useMemo } from "react";
 import ReactFlow, { Background, Controls } from "reactflow";
 import type { Edge, Node } from "reactflow";
 
-import type { Skill } from "../types";
+import type { Skill, Connection } from "../types";
 import { buildTree } from "../utils/buildTree";
 import { layoutTree } from "../utils/layoutTree";
+import { connectionStyle } from "../utils/connectionStyle";
 import SkillNode, { DEPTH_COLORS } from "./SkillNode";
 
 const NODE_SIZES = [96, 78, 72, 68, 64];
@@ -39,9 +40,13 @@ type Props = {
   onNodeClick: (skillId: string) => void;
   onEditNode?: (skillId: string) => void;
   onDeleteNode?: (skillId: string) => void;
+  connections?: Connection[];
+  hoveredConnectionId?: string | null;
+  showAllConnections?: boolean;
+  onConnectionClick?: (connectionId: string) => void;
 };
 
-export default function SkillTree({ skills, rootId, isDark, onNodeClick, onEditNode, onDeleteNode }: Props) {
+export default function SkillTree({ skills, rootId, isDark, onNodeClick, onEditNode, onDeleteNode, connections = [], hoveredConnectionId = null, showAllConnections = false, onConnectionClick }: Props) {
   const { nodes, edges } = useMemo(() => {
     const subtree = getSubtree(skills, rootId);
     const tree = buildTree(subtree);
@@ -83,8 +88,33 @@ export default function SkillTree({ skills, rootId, isDark, onNodeClick, onEditN
         };
       });
 
-    return { nodes, edges };
-  }, [skills, rootId, onEditNode, onDeleteNode]);
+    // Cross-domain connection edges — only those whose BOTH endpoints are
+    // currently on screen. Dashed amber, width + brightness scale with strength.
+    const present = new Set(positioned.map((p) => p.id));
+    const connEdges: Edge[] = connections
+      .filter((c) => present.has(c.source) && present.has(c.target) && (showAllConnections || c.id === hoveredConnectionId))
+      .map((c) => {
+        const { width, opacity, color, glow } = connectionStyle(c.strength);
+        return {
+          id: c.id,
+          source: c.source,
+          target: c.target,
+          type: "straight",
+          animated: c.strength >= 80,
+          data: { isConnection: true },
+          style: {
+            stroke: color,
+            strokeWidth: width,
+            strokeDasharray: "7 5",
+            opacity,
+            filter: glow ? `drop-shadow(0 0 4px ${color})` : undefined,
+            cursor: "pointer",
+          },
+        };
+      });
+
+    return { nodes, edges: [...edges, ...connEdges] };
+  }, [skills, rootId, onEditNode, onDeleteNode, connections, hoveredConnectionId, showAllConnections]);
 
   return (
     <ReactFlow
@@ -92,11 +122,12 @@ export default function SkillTree({ skills, rootId, isDark, onNodeClick, onEditN
       edges={edges}
       nodeTypes={nodeTypes}
       fitView
-      fitViewOptions={{ padding: 0.3 }}
+      fitViewOptions={{ padding: 0.08 }}
       minZoom={0.3}
       maxZoom={2}
       proOptions={{ hideAttribution: true }}
       onNodeClick={(_e, node) => onNodeClick(node.id)}
+      onEdgeClick={(_e, edge) => { if (edge.data?.isConnection) onConnectionClick?.(edge.id); }}
     >
       <Background color={isDark ? "#1a1a1a" : "#e7e5e4"} gap={32} size={1} />
       <Controls style={{ background: "var(--bg-panel)", border: "1px solid var(--border)" }} />

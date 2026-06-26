@@ -1,11 +1,12 @@
 import { useState, useCallback } from "react";
-import type { Skill } from "./types";
-import { skills as initialSkills } from "./data";
+import type { Skill, Connection } from "./types";
+import { skills as initialSkills, connections as initialConnections } from "./data";
 import { getDepth, getSubtreeIds, countDescendants } from "./utils/stats";
 import { useTheme } from "./components/ThemeToggle";
 import { AddSkillModal } from "./components/AddSkillModal";
 import { EditSkillModal } from "./components/EditSkillModal";
 import { DetailModal } from "./components/DetailModal";
+import { ConnectionModal } from "./components/ConnectionModal";
 import { HomeView } from "./views/HomeView";
 import { TreeView, FullTreeView } from "./views/TreeView";
 
@@ -59,15 +60,18 @@ function ConfirmDeleteModal({
 export default function App() {
   const { isDark, toggle } = useTheme();
   const [skills, setSkills] = useState<Skill[]>(initialSkills);
+  const [connections, setConnections] = useState<Connection[]>(initialConnections);
   const [view, setView] = useState<View>({ kind: "home" });
   const [showAdd, setShowAdd] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editId, setEditId] = useState<string | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [selectedConnId, setSelectedConnId] = useState<string | null>(null);
 
   const selectedSkill = selectedId ? skills.find((s) => s.id === selectedId) ?? null : null;
   const editSkill = editId ? skills.find((s) => s.id === editId) ?? null : null;
   const confirmDeleteSkill = confirmDeleteId ? skills.find((s) => s.id === confirmDeleteId) ?? null : null;
+  const selectedConn = selectedConnId ? connections.find((c) => c.id === selectedConnId) ?? null : null;
 
   const addParentId = view.kind === "tree" ? view.rootId : null;
   const addParentSkills = view.kind === "tree"
@@ -82,6 +86,8 @@ export default function App() {
     if (!confirmDeleteId) return;
     const ids = getSubtreeIds(skills, confirmDeleteId);
     setSkills((prev) => prev.filter((s) => !ids.has(s.id)));
+    // Drop any cross-domain connections touching a deleted node
+    setConnections((prev) => prev.filter((c) => !ids.has(c.source) && !ids.has(c.target)));
     // If we deleted the current tree's root, go home
     if (view.kind === "tree" && view.rootId === confirmDeleteId) {
       setView({ kind: "home" });
@@ -90,6 +96,16 @@ export default function App() {
     setSelectedId(null);
     setEditId(null);
   }, [confirmDeleteId, skills, view]);
+
+  // Merge newly-discovered cross-domain connections, de-duplicating by id.
+  const handleAddConnections = useCallback((found: Connection[]) => {
+    if (!found.length) return;
+    setConnections((prev) => {
+      const byId = new Map(prev.map((c) => [c.id, c]));
+      for (const c of found) byId.set(c.id, c);
+      return [...byId.values()];
+    });
+  }, []);
 
   const handleUpdate = useCallback((updated: Skill) => {
     setSkills((prev) => prev.map((s) => s.id === updated.id ? updated : s));
@@ -104,10 +120,12 @@ export default function App() {
         <HomeView
           {...shared}
           skills={skills}
+          connections={connections}
           onEnterTree={(id) => setView({ kind: "tree", rootId: id })}
           onEnterFull={() => setView({ kind: "full" })}
           onAddRoot={() => setShowAdd(true)}
           onAddSkill={(s) => setSkills((prev) => [...prev, s])}
+          onAddConnections={handleAddConnections}
           onDeleteSkill={handleDeleteRequest}
         />
       )}
@@ -118,6 +136,8 @@ export default function App() {
           rootId={view.rootId}
           onBack={() => setView({ kind: "home" })}
           onAddSkill={() => setShowAdd(true)}
+          onAddSkillDirect={(s) => setSkills((prev) => [...prev, { ...s, createdAt: new Date().toISOString() }])}
+          onAddConnections={handleAddConnections}
           onNodeClick={setSelectedId}
           onDeleteSkill={handleDeleteRequest}
           onEditSkill={setEditId}
@@ -125,6 +145,8 @@ export default function App() {
       )}
       {view.kind === "full" && (
         <FullTreeView {...shared} skills={skills}
+          connections={connections}
+          onConnectionClick={setSelectedConnId}
           onBack={() => setView({ kind: "home" })}
           onNodeClick={setSelectedId}
         />
@@ -150,6 +172,13 @@ export default function App() {
           skill={selectedSkill}
           depth={getDepth(skills, selectedSkill.id)}
           onClose={() => setSelectedId(null)}
+        />
+      )}
+      {selectedConn && (
+        <ConnectionModal
+          connection={selectedConn}
+          skills={skills}
+          onClose={() => setSelectedConnId(null)}
         />
       )}
       {confirmDeleteSkill && (

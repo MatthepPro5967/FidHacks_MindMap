@@ -14,6 +14,18 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
   );
 }
 
+function BadgeTooltip({ name, unlocked, requirement }: { name: string; desc?: string; unlocked: boolean; requirement: string }) {
+  return (
+    <div style={{ position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)", background: "#1a1a1a", color: "#fff", fontSize: 10, borderRadius: 6, padding: "7px 10px", whiteSpace: "nowrap", zIndex: 99, pointerEvents: "none", boxShadow: "0 2px 10px rgba(0,0,0,0.3)", lineHeight: 1.5, textAlign: "left" }}>
+      <div style={{ fontWeight: 600, marginBottom: 2 }}>{name}</div>
+      <div style={{ color: "#9ca3af" }}>{requirement}</div>
+      <div style={{ marginTop: 4, color: unlocked ? "#4ade80" : "#9ca3af", fontWeight: unlocked ? 600 : 400 }}>
+        {unlocked ? "✓ Unlocked" : "Not yet unlocked"}
+      </div>
+    </div>
+  );
+}
+
 function HeatCell({ day }: { day: { date: string; count: number; future: boolean } }) {
   const [hover, setHover] = useState(false);
 
@@ -140,12 +152,15 @@ export function LeftPanel({ skills }: { skills: Skill[] }) {
         <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
           {TIER_BADGES.map((badge) => {
             const unlocked = badge.unlocked(skills);
+            const [hovered, setHovered] = useState(false);
             return (
               <div
                 key={badge.id}
-                title={`${badge.name} — ${badge.desc}`}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, minWidth: 0 }}
+                onMouseEnter={() => setHovered(true)}
+                onMouseLeave={() => setHovered(false)}
+                style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, minWidth: 0 }}
               >
+                {hovered && <BadgeTooltip name={badge.name} desc={badge.desc} unlocked={unlocked} requirement={badge.desc} />}
                 <BadgeIcon tier={badge.tier} unlocked={unlocked} />
                 <div style={{
                   color: unlocked ? "var(--text-2)" : "var(--text-3)",
@@ -171,8 +186,15 @@ export function LeftPanel({ skills }: { skills: Skill[] }) {
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {ACHIEVEMENT_BADGES.map((badge) => {
           const unlocked = badge.unlocked(skills);
+          const [hovered, setHovered] = useState(false);
           return (
-            <div key={badge.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: unlocked ? 1 : 0.85 }}>
+            <div
+              key={badge.id}
+              onMouseEnter={() => setHovered(true)}
+              onMouseLeave={() => setHovered(false)}
+              style={{ position: "relative", background: hovered ? "var(--bg-card-hover)" : "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: unlocked ? 1 : 0.85, transition: "background 0.15s" }}
+            >
+              {hovered && <BadgeTooltip name={badge.name} desc={badge.desc} unlocked={unlocked} requirement={badge.desc} />}
               <BadgeIcon tier={badge.tier} unlocked={unlocked} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: unlocked ? "var(--text-1)" : "var(--text-3)", fontSize: 12, fontWeight: 600 }}>{badge.name}</div>
