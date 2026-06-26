@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Handle, Position } from "reactflow";
 
 // Fidelity palette: green, grey, black, white
@@ -58,16 +58,26 @@ function TrashIcon() {
 
 export default function SkillNode({ data }: { data: NodeData }) {
   const [hover, setHover] = useState(false);
+  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const s = DEPTH_COLORS[Math.min(data.depth, DEPTH_COLORS.length - 1)];
   const size = NODE_SIZES[Math.min(data.depth, NODE_SIZES.length - 1)];
+
+  const showHover = useCallback(() => {
+    if (hideTimer.current) { clearTimeout(hideTimer.current); hideTimer.current = null; }
+    setHover(true);
+  }, []);
+
+  const scheduleHide = useCallback(() => {
+    hideTimer.current = setTimeout(() => setHover(false), 300);
+  }, []);
 
   return (
     <>
       <Handle type="target" position={Position.Top} style={CENTER} />
       <div
         style={{ position: "relative", width: size, height: size }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
+        onMouseEnter={showHover}
+        onMouseLeave={scheduleHide}
       >
         <div
           style={{
@@ -108,7 +118,8 @@ export default function SkillNode({ data }: { data: NodeData }) {
               gap: 4,
               zIndex: 10,
             }}
-            onMouseEnter={() => setHover(true)}
+            onMouseEnter={showHover}
+            onMouseLeave={scheduleHide}
           >
             {data.onEdit && (
               <button
