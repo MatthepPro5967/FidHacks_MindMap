@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skill Ledger</title>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
+      :root[data-theme="dark"] {
+        --bg-base: #111111;
+        --bg-panel: #0a0a0a;
+        --bg-card: #0d0d0d;
+        --bg-card-hover: #161616;
+        --bg-input: #1a1a1a;
+        --border: #1a1a1a;
+        --border-md: #2a2a2a;
+        --border-dash: #1f1f1f;
+        --text-1: #ffffff;
+        --text-2: #6B7280;
+        --text-3: #374151;
+        --green: #00754A;
+        --green-hi: #00A650;
+        --modal-bg: rgba(0,0,0,0.65);
+      }
+      :root[data-theme="light"] {
+        --bg-base: #f5f5f4;
+        --bg-panel: #ffffff;
+        --bg-card: #fafaf9;
+        --bg-card-hover: #f0efee;
+        --bg-input: #f0efee;
+        --border: #e7e5e4;
+        --border-md: #d6d3d1;
+        --border-dash: #d6d3d1;
+        --text-1: #1c1917;
+        --text-2: #57534e;
+        --text-3: #a8a29e;
+        --green: #00754A;
+        --green-hi: #009960;
+        --modal-bg: rgba(0,0,0,0.45);
+      }
+    </style>
+  </head>
+  <body style="overflow:hidden">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
