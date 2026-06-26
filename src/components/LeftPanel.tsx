@@ -3,6 +3,7 @@ import type { Skill } from "../types";
 import { maxDepth, mostRecentSkill } from "../utils/stats";
 import { buildActivityGrid, activityColor } from "../utils/activity";
 import { MILESTONES, BADGES } from "../constants";
+import { BadgeIcon } from "./BadgeIcon";
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
@@ -40,6 +41,9 @@ function HeatCell({ day }: { day: { date: string; count: number; future: boolean
     </div>
   );
 }
+
+const TIER_BADGES = BADGES.filter((b) => ["bronze", "silver", "gold", "platinum", "ruby"].includes(b.tier));
+const ACHIEVEMENT_BADGES = BADGES.filter((b) => !["bronze", "silver", "gold", "platinum", "ruby"].includes(b.tier));
 
 export function LeftPanel({ skills }: { skills: Skill[] }) {
   const [weekOffset, setWeekOffset] = useState(0);
@@ -130,16 +134,46 @@ export function LeftPanel({ skills }: { skills: Skill[] }) {
 
       <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
 
-      {/* Badges */}
-      <div style={{ color: "var(--text-3)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 2, marginBottom: 2 }}>Badges</div>
+      {/* Milestone Tier Badges */}
+      <div style={{ color: "var(--text-3)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 2, marginBottom: 2 }}>Milestone Tiers</div>
+      <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "14px 14px 10px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 4 }}>
+          {TIER_BADGES.map((badge) => {
+            const unlocked = badge.unlocked(skills);
+            return (
+              <div
+                key={badge.id}
+                title={`${badge.name} — ${badge.desc}`}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, flex: 1, minWidth: 0 }}
+              >
+                <BadgeIcon tier={badge.tier} unlocked={unlocked} />
+                <div style={{
+                  color: unlocked ? "var(--text-2)" : "var(--text-3)",
+                  fontSize: 9,
+                  fontWeight: unlocked ? 600 : 400,
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  textAlign: "center",
+                  lineHeight: 1.2,
+                }}>
+                  {badge.name}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
+
+      {/* Achievement Badges */}
+      <div style={{ color: "var(--text-3)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.1em", paddingLeft: 2, marginBottom: 2 }}>Achievements</div>
       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {BADGES.map((badge) => {
+        {ACHIEVEMENT_BADGES.map((badge) => {
           const unlocked = badge.unlocked(skills);
           return (
             <div key={badge.id} style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, opacity: unlocked ? 1 : 0.85 }}>
-              <div style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden", flexShrink: 0, background: "var(--bg-input)", display: "flex", alignItems: "center", justifyContent: "center", filter: unlocked ? "none" : "grayscale(1) opacity(0.35)" }}>
-                <img src={badge.image} alt={badge.name} style={{ width: "100%", height: "100%", objectFit: "cover" }} onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }} />
-              </div>
+              <BadgeIcon tier={badge.tier} unlocked={unlocked} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ color: unlocked ? "var(--text-1)" : "var(--text-3)", fontSize: 12, fontWeight: 600 }}>{badge.name}</div>
                 <div style={{ color: "var(--text-3)", fontSize: 10, marginTop: 2 }}>{badge.desc}</div>
@@ -152,7 +186,7 @@ export function LeftPanel({ skills }: { skills: Skill[] }) {
 
       <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
 
-      {/* Milestone */}
+      {/* Milestone progress */}
       <div style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderRadius: 8, padding: "14px 16px" }}>
         <div style={{ color: "var(--text-3)", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
           {prevMilestone ? `Milestone · ${prevMilestone.label}` : "Milestones"}
