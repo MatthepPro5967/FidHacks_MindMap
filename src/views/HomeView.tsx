@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { Skill } from "../types";
 import { countDescendants } from "../utils/stats";
 import { DEPTH_COLORS } from "../components/SkillNode";
@@ -16,9 +17,21 @@ type Props = {
   onEnterFull: () => void;
   onAddRoot: () => void;
   onAddSkill: (s: Skill) => void;
+  onDeleteSkill: (id: string) => void;
 };
 
-export function HomeView({ skills, isDark, onToggleTheme, onEnterTree, onEnterFull, onAddRoot, onAddSkill }: Props) {
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
+      <path d="M2 4 L10 4 L9 11 L3 11 Z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+      <path d="M1 4 L11 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M4.5 4 L4.5 2.5 L7.5 2.5 L7.5 4" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" fill="none" />
+    </svg>
+  );
+}
+
+export function HomeView({ skills, isDark, onToggleTheme, onEnterTree, onEnterFull, onAddRoot, onAddSkill, onDeleteSkill }: Props) {
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
   const roots = skills.filter((s) => s.parent === null);
 
   return (
@@ -75,15 +88,16 @@ export function HomeView({ skills, isDark, onToggleTheme, onEnterTree, onEnterFu
               const count = countDescendants(skills, root.id);
               const color = DEPTH_COLORS[1 + (i % (DEPTH_COLORS.length - 1))];
               const children = skills.filter((s) => s.parent === root.id).slice(0, 3);
+              const isHovered = hoveredCard === root.id;
               return (
                 <div
                   key={root.id}
                   onClick={() => onEnterTree(root.id)}
-                  style={{ background: "var(--bg-card)", border: "1px solid var(--border)", borderLeft: `3px solid ${color.border}`, borderRadius: 8, padding: "18px", cursor: "pointer" }}
-                  onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg-card-hover)"; }}
-                  onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = "var(--bg-card)"; }}
+                  onMouseEnter={() => setHoveredCard(root.id)}
+                  onMouseLeave={() => setHoveredCard(null)}
+                  style={{ position: "relative", background: isHovered ? "var(--bg-card-hover)" : "var(--bg-card)", border: "1px solid var(--border)", borderLeft: `3px solid ${color.border}`, borderRadius: 8, padding: "18px", cursor: "pointer" }}
                 >
-                  <div style={{ fontWeight: 700, color: "var(--text-1)", fontSize: 15, marginBottom: 4 }}>{root.title}</div>
+                  <div style={{ fontWeight: 700, color: "var(--text-1)", fontSize: 15, marginBottom: 4, paddingRight: 28 }}>{root.title}</div>
                   <div style={{ color: "var(--text-3)", fontSize: 11, marginBottom: children.length ? 12 : 0 }}>
                     {count === 0 ? "No sub-skills yet" : `${count} sub-skill${count !== 1 ? "s" : ""}`}
                   </div>
@@ -94,6 +108,32 @@ export function HomeView({ skills, isDark, onToggleTheme, onEnterTree, onEnterFu
                       ))}
                       {count > 3 && <span style={{ color: "var(--text-3)", fontSize: 10 }}>+{count - 3} more</span>}
                     </div>
+                  )}
+                  {isHovered && (
+                    <button
+                      title={`Delete ${root.title}${count > 0 ? ` and ${count} sub-skill${count !== 1 ? "s" : ""}` : ""}`}
+                      onClick={(e) => { e.stopPropagation(); onDeleteSkill(root.id); }}
+                      style={{
+                        position: "absolute",
+                        top: 10,
+                        right: 10,
+                        width: 26,
+                        height: 26,
+                        borderRadius: 5,
+                        border: "1px solid var(--border-md)",
+                        background: "var(--bg-panel)",
+                        color: "var(--text-3)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer",
+                        padding: 0,
+                      }}
+                      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; (e.currentTarget as HTMLButtonElement).style.borderColor = "#ef4444"; }}
+                      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "var(--text-3)"; (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border-md)"; }}
+                    >
+                      <TrashIcon />
+                    </button>
                   )}
                 </div>
               );

@@ -10,7 +10,6 @@ import SkillNode, { DEPTH_COLORS } from "./SkillNode";
 const NODE_SIZES = [96, 78, 72, 68, 64];
 const nodeTypes = { custom: SkillNode };
 
-// Returns all skill IDs that are descendants of rootId (inclusive)
 function getSubtree(skills: Skill[], rootId: string): Skill[] {
   const result: Skill[] = [];
   const queue = [rootId];
@@ -38,9 +37,11 @@ type Props = {
   rootId: string;
   isDark: boolean;
   onNodeClick: (skillId: string) => void;
+  onEditNode?: (skillId: string) => void;
+  onDeleteNode?: (skillId: string) => void;
 };
 
-export default function SkillTree({ skills, rootId, isDark, onNodeClick }: Props) {
+export default function SkillTree({ skills, rootId, isDark, onNodeClick, onEditNode, onDeleteNode }: Props) {
   const { nodes, edges } = useMemo(() => {
     const subtree = getSubtree(skills, rootId);
     const tree = buildTree(subtree);
@@ -55,7 +56,14 @@ export default function SkillTree({ skills, rootId, isDark, onNodeClick }: Props
       return {
         id: n.id,
         position: { x: n.x - half, y: n.y - half },
-        data: { label: n.title, depth: n.depth, hasImage: !!skillMap.get(n.id)?.image },
+        data: {
+          label: n.title,
+          depth: n.depth,
+          hasImage: !!skillMap.get(n.id)?.image,
+          id: n.id,
+          onEdit: onEditNode,
+          onDelete: onDeleteNode,
+        },
         type: "custom",
         style: { width: size, height: size },
       };
@@ -76,7 +84,7 @@ export default function SkillTree({ skills, rootId, isDark, onNodeClick }: Props
       });
 
     return { nodes, edges };
-  }, [skills, rootId]);
+  }, [skills, rootId, onEditNode, onDeleteNode]);
 
   return (
     <ReactFlow

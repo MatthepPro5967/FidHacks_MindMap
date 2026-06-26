@@ -12,7 +12,14 @@ type BaseProps = {
   onNodeClick: (id: string) => void;
 };
 
-export function TreeView({ skills, rootId, isDark, onToggleTheme, onBack, onAddSkill, onNodeClick }: BaseProps & { rootId: string; onAddSkill: () => void }) {
+type TreeViewProps = BaseProps & {
+  rootId: string;
+  onAddSkill: () => void;
+  onDeleteSkill: (id: string) => void;
+  onEditSkill: (id: string) => void;
+};
+
+export function TreeView({ skills, rootId, isDark, onToggleTheme, onBack, onAddSkill, onNodeClick, onDeleteSkill, onEditSkill }: TreeViewProps) {
   const root = skills.find((s) => s.id === rootId);
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "var(--bg-base)", fontFamily: "system-ui, sans-serif", overflow: "hidden" }}>
@@ -29,6 +36,15 @@ export function TreeView({ skills, rootId, isDark, onToggleTheme, onBack, onAddS
         right={
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <ThemeToggle isDark={isDark} onToggle={onToggleTheme} />
+            <button
+              onClick={() => onDeleteSkill(rootId)}
+              style={{ background: "transparent", border: "1px solid var(--border)", borderRadius: 5, color: "var(--text-3)", fontSize: 12, padding: "8px 14px", cursor: "pointer", fontFamily: "inherit" }}
+              onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#ef4444"; (e.currentTarget as HTMLButtonElement).style.color = "#ef4444"; }}
+              onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "var(--border)"; (e.currentTarget as HTMLButtonElement).style.color = "var(--text-3)"; }}
+              title="Delete entire tree"
+            >
+              Delete Tree
+            </button>
             <button onClick={onAddSkill} style={{ background: "var(--green)", border: "none", borderRadius: 5, color: "#fff", fontSize: 12, fontWeight: 600, padding: "8px 16px", cursor: "pointer", fontFamily: "inherit", textTransform: "uppercase", letterSpacing: "0.05em" }}>
               + Add
             </button>
@@ -36,7 +52,14 @@ export function TreeView({ skills, rootId, isDark, onToggleTheme, onBack, onAddS
         }
       />
       <div style={{ flex: 1 }}>
-        <SkillTree skills={skills} rootId={rootId} isDark={isDark} onNodeClick={onNodeClick} />
+        <SkillTree
+          skills={skills}
+          rootId={rootId}
+          isDark={isDark}
+          onNodeClick={onNodeClick}
+          onEditNode={onEditSkill}
+          onDeleteNode={onDeleteSkill}
+        />
       </div>
     </div>
   );
